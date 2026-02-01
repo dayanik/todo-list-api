@@ -6,10 +6,32 @@ from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncAttrs
 
 
-class UserRequest(BaseModel):
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+
+
+class TokenData(BaseModel):
+    email: str | None = None
+
+
+class UserRegisterRequest(BaseModel):
     name: str
     email: str
     password: str
+
+
+class UserLoginRequest(BaseModel):
+    email: str
+    password: str
+
+
+class UserInDB(BaseModel):
+    user_id: int
+    name: str
+    email: str
+    password: str
+    todos: list
 
 
 class TodoRequest(BaseModel):
@@ -45,7 +67,6 @@ class User(Base):
     name: Mapped[str]
     email: Mapped[str] = mapped_column(unique=True)
     password: Mapped[str]
-    token: Mapped[str]
     todos: Mapped[list["Todo"]] = relationship(
         "Todo", back_populates='user', cascade="all, delete-orphan")
 
@@ -56,6 +77,10 @@ class Todo(Base):
     todo_id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     title: Mapped[str]
     description: Mapped[str]
+    user_id = mapped_column(
+        Integer,
+        ForeignKey("users.user_id")
+    )
     user: Mapped["User"] = relationship("User", back_populates="todos")
 
     def to_dict(self) -> dict:
