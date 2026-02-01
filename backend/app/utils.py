@@ -1,56 +1,18 @@
 import jwt
 
 from datetime import datetime, timedelta, timezone
-from fastapi import FastAPI, status, Response, Request, Depends, status
-from fastapi.exceptions import RequestValidationError, HTTPException
-from fastapi.responses import JSONResponse
+from fastapi import Depends
 from fastapi.security import OAuth2PasswordBearer
 from jwt.exceptions import InvalidTokenError
 from pwdlib import PasswordHash
 from typing import Annotated
 
-from app import database, models, config
+from app import database, models, config, schemas, exceptions
 
 
 password_hash = PasswordHash.recommended()
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
-
-
-class HTTPEmailNotUniqueException(HTTPException):
-    def __init__(
-            self, 
-            detail: str="User with than email is already exist", 
-            headers: dict={"WWW-Authenticate": "Bearer"}
-            ):
-        super().__init__(
-            status_code=status.HTTP_409_CONFLICT, 
-            detail=detail, 
-            headers=headers)
-
-
-class HTTPTodoNotExistsException(HTTPException):
-    def __init__(
-            self, 
-            detail: str="Task with that id not found", 
-            headers: dict={"WWW-Authenticate": "Bearer"}
-            ):
-        super().__init__(
-            status_code=status.HTTP_404_NOT_FOUND, 
-            detail=detail, 
-            headers=headers)
-
-
-class HTTPUnauthorizedException(HTTPException):
-    def __init__(
-            self, 
-            detail: str="Could not validate credentials", 
-            headers: dict={"WWW-Authenticate": "Bearer"}
-            ):
-        super().__init__(
-            status_code=status.HTTP_401_UNAUTHORIZED, 
-            detail=detail, 
-            headers=headers)
 
 
 def verify_password(plain_pswd, hashed_pswd):
@@ -89,11 +51,11 @@ async def get_current_user(
             token, config.JWT_SECRET_KEY, algorithms=[config.JWT_ALGORITHM])
         email = payload.get("sub")
         if email is None:
-            raise HTTPUnauthorizedException()
-        token_data = models.TokenData(email=email)
+            raise exceptions.HTTPUnauthorizedException()
+        token_data = schemas.TokenData(email=email)
     except InvalidTokenError:
-        raise HTTPUnauthorizedException()
+        raise exceptions.HTTPUnauthorizedException()
     user = await database.get_user(email=token_data.email)
     if user is None:
-        raise HTTPUnauthorizedException()
+        raise exceptions.HTTPUnauthorizedException()
     return user
