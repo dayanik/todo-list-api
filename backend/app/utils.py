@@ -23,7 +23,7 @@ def get_password_hash(password):
     return password_hash.hash(password)
 
 
-async def authenticate_user(email: str, password: str):
+async def authenticate_user(email: str, password: str) -> models.User:
     user = await database.get_user(email)
     if not user:
         return False
@@ -37,10 +37,13 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None):
     if expires_delta:
         expire = datetime.now(timezone.utc) + expires_delta
     else:
-        expire = datetime.now(timezone.utc) + timedelta(minutes=15)
+        expire_minutes = timedelta(minutes=config.ACCESS_TOKEN_EXPIRE_MINUTES)
+        expire = datetime.now(timezone.utc) + expire_minutes
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(
-        to_encode, config.JWT_SECRET_KEY, algorithm=config.JWT_ALGORITHM)
+            to_encode, 
+            config.JWT_SECRET_KEY, algorithm=config.JWT_ALGORITHM
+        )
     return encoded_jwt
 
 
@@ -48,7 +51,10 @@ async def get_current_user(
         token: Annotated[str, Depends(oauth2_scheme)]) -> models.User:
     try:
         payload = jwt.decode(
-            token, config.JWT_SECRET_KEY, algorithms=[config.JWT_ALGORITHM])
+                token,
+                config.JWT_SECRET_KEY,
+                algorithms=[config.JWT_ALGORITHM]
+            )
         email = payload.get("sub")
         if email is None:
             raise exceptions.HTTPUnauthorizedException()

@@ -77,19 +77,19 @@ async def get_all_tasks(
     page: int,
     limit: int,
     session: AsyncSession) -> list[models.Task]:
-    query = select(
-        models.Task).where(
-            models.Task.user_id == user_id).order_by(
-                models.Task.updated_at).limit(
-                    limit).offset(
-                        (page - 1) * limit)
-    result = await session.execute(query)
+    result = await session.execute(
+        select(models.Task)
+        .where(models.Task.user_id == user_id)
+        .order_by(models.Task.updated_at)
+        .limit(limit)
+        .offset((page - 1) * limit)
+    )
     tasks = result.scalars().all()
     return tasks
 
 
 @connection
-async def get_tasks_count(limit: int, session: AsyncSession):
+async def get_tasks_count(session: AsyncSession):
     count_query = select(func.count()).select_from(models.Task)
     total_tasks = await session.scalar(count_query)
     return total_tasks
@@ -97,9 +97,9 @@ async def get_tasks_count(limit: int, session: AsyncSession):
 
 @connection
 async def get_task(
-      task_id: int, 
-      session: AsyncSession
-      ) -> models.Task | None:
+        task_id: int, 
+        session: AsyncSession
+    ) -> models.Task | None:
     query = select(models.Task).where(models.Task.task_id == task_id)
     result = await session.execute(query)
     return result.scalar_one_or_none()
@@ -117,7 +117,7 @@ async def update_task(
     task = result.scalar_one_or_none()
 
     if not task:
-         raise exceptions.HTTPTaskNotExistsException()
+        raise exceptions.HTTPTaskNotExistsException()
     
     task.title = data.title
     task.description = data.description
@@ -128,13 +128,13 @@ async def update_task(
 
 @connection
 async def delete_task(
-     task_id: int, 
-     session: AsyncSession,
-     ):
+        task_id: int,
+        session: AsyncSession
+    ):
     query = select(models.Task).where(models.Task.task_id == task_id)
     result = await session.execute(query)
     task = result.scalar_one_or_none()
     if not task:
-         raise exceptions.HTTPTaskNotExistsException()
+        raise exceptions.HTTPTaskNotExistsException()
     await session.delete(task)
     await session.commit()
