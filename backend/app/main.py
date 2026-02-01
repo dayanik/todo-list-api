@@ -1,4 +1,5 @@
 import jwt
+import math
 
 from datetime import datetime, timedelta, timezone
 from fastapi import FastAPI, status, Response, Request, Depends
@@ -23,29 +24,27 @@ async def validation_exception_handler(
     return Response(status_code=status.HTTP_400_BAD_REQUEST)
 
 
-@app.exception_handler(utils.HTTPUnauthorizedException)
-async def validation_exception_handler(
-    request: Request, exc: utils.HTTPUnauthorizedException):
-    return JSONResponse(content=exc.detail, status_code=status.HTTP_409_CONFLICT)
-
-
 @app.exception_handler(HTTPException)
 async def validation_exception_handler(
     request: Request, exc: HTTPException):
-    return JSONResponse(content=exc.detail, status_code=status.HTTP_409_CONFLICT)
+    return JSONResponse(content=exc.detail, status_code=exc.status_code)
 
 
-@app.post("/register")
+@app.post(
+        "/register",
+        response_model=models.Token,
+        status_code=status.HTTP_201_CREATED
+        )
 async def create_user(data: models.UserRegisterRequest):
-    user = await database.create_user_on_db(data)
+    user: models.User = await database.create_user_on_db(data)
     access_token_expires = timedelta(minutes=config.ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = utils.create_access_token(
         data={"sub": user.email}, expires_delta=access_token_expires
     )
-    return JSONResponse(content=access_token, status_code=status.HTTP_201_CREATED)
+    return models.Token(access_token=access_token, token_type="Bearer")
 
 
-@app.post("/login")
+@app.post("/login", response_model=models.Token)
 async def login_user(data: models.UserLoginRequest):
     user = await utils.authenticate_user(
         email=data.email, password=data.password)
@@ -59,37 +58,60 @@ async def login_user(data: models.UserLoginRequest):
     access_token = utils.create_access_token(
         data={"sub": user.email}, expires_delta=access_token_expires
     )
-    return JSONResponse(content=access_token, status_code=status.HTTP_200_OK)
-
-'''
-@app.get("/todos/")
-@app.get("/todos")
-async def get_all_todos(page: int=1, limit: int=10):
-    posts = await database.get_all_todos_from_db()
-    content = []
-    return JSONResponse(content=content, status_code=status.HTTP_200_OK)
+    return models.Token(access_token=access_token, token_type="Bearer")
 
 
-@app.delete("/todos/{todo_id}")
-async def delete_todo(todo_id: int):
-    todo = await database.delete_todo_from_db(todo_id)
-    if todo:
-        return Response(status_code=status.HTTP_204_NO_CONTENT)
-    else:
-        return Response(status_code=status.HTTP_404_NOT_FOUND)
+@app.get("/todos/{todo_id}", response_model=models.TodoGetModel)
+async def get_todo(
+    todo_id: int, 
+    user: Annotated[models.User, Depends(utils.get_current_user)]
+    ):
+    todo = await database.get_todo_from_db(todo_id)
+    if not todo:
+        raise utils.HTTPTodoNotExistsException()
+    return todo
 
 
-@app.post("/todos")
-async def create_todos(data: models.TodoRequest):
-    todo = await database.create_todo_on_db(data)
-    return JSONResponse(content=todo, status_code=status.HTTP_201_CREATED)
+@app.get("/todos", response_model=models.TodoListGetModel)
+async def get_all_todos(
+    user: Annotated[models.User, Depends(utils.get_current_user)],
+    page: int=1, limit: int=10
+    ):
+    todos = await database.get_all_todos_from_db(user.user_id, page, limit)
+    todos_count = await database.get_todos_count(limit)
+    todos_response = models.TodoListGetModel(
+        data=todos,
+        limit=limit,
+        page=page,
+        total=math.ceil(todos_count / limit)
+    )
+    return todos_response
 
 
-@app.put("/todos/{todo_id}")
-async def update_todo(todo_id: int, data: models.TodoRequest):
+@app.delete("/todos/{todo_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_todo(
+    todo_id: int,
+    user: Annotated[models.User, Depends(utils.get_current_user)]):
+    await database.delete_todo_from_db(todo_id)
+
+
+@app.post(
+        "/todos",
+        response_model=models.TodoGetModel, 
+        status_code=status.HTTP_201_CREATED)
+async def create_todos(
+    data: models.TodoRequest,
+    user: Annotated[models.User, Depends(utils.get_current_user)]
+    ):
+    todo = await database.create_todo_on_db(data, user.user_id)
+    return todo
+
+
+@app.put("/todos/{todo_id}", response_model=models.TodoGetModel)
+async def update_todo(
+    todo_id: int, 
+    data: models.TodoRequest,
+    user: Annotated[models.User, Depends(utils.get_current_user)]
+    ):
     todo = await database.update_todo_on_db(todo_id, data)
-    if todo:
-        return JSONResponse(content=todo, status_code=status.HTTP_200_OK)
-    else:
-        return Response(status_code=status.HTTP_404_NOT_FOUND)
-'''
+    return todo

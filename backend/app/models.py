@@ -1,7 +1,7 @@
 from datetime import datetime
 from sqlalchemy import String, Integer, JSON, func, ForeignKey
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 from sqlalchemy.ext.asyncio import AsyncAttrs
 
@@ -26,23 +26,17 @@ class UserLoginRequest(BaseModel):
     password: str
 
 
-class UserInDB(BaseModel):
-    user_id: int
-    name: str
-    email: str
-    password: str
-    todos: list
-
-
 class TodoRequest(BaseModel):
     title: str
     description: str
 
 
 class TodoGetModel(BaseModel):
-    id: int
+    todo_id: int
     title: str
     description: str
+
+    model_config = ConfigDict(from_attributes=True)
 
 
 class TodoListGetModel(BaseModel):
@@ -82,10 +76,3 @@ class Todo(Base):
         ForeignKey("users.user_id")
     )
     user: Mapped["User"] = relationship("User", back_populates="todos")
-
-    def to_dict(self) -> dict:
-        return {
-            'todo_id': self.post_id,
-            'title': self.title,
-            'description': self.content
-        }

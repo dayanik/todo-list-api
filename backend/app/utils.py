@@ -16,11 +16,30 @@ password_hash = PasswordHash.recommended()
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
-unauthorized_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Could not validate credentials",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
+
+class HTTPEmailNotUniqueException(HTTPException):
+    def __init__(
+            self, 
+            detail: str="User with than email is already exist", 
+            headers: dict={"WWW-Authenticate": "Bearer"}
+            ):
+        super().__init__(
+            status_code=status.HTTP_409_CONFLICT, 
+            detail=detail, 
+            headers=headers)
+
+
+class HTTPTodoNotExistsException(HTTPException):
+    def __init__(
+            self, 
+            detail: str="Task with that id not found", 
+            headers: dict={"WWW-Authenticate": "Bearer"}
+            ):
+        super().__init__(
+            status_code=status.HTTP_404_NOT_FOUND, 
+            detail=detail, 
+            headers=headers)
+
 
 class HTTPUnauthorizedException(HTTPException):
     def __init__(
@@ -60,11 +79,11 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None):
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(
         to_encode, config.JWT_SECRET_KEY, algorithm=config.JWT_ALGORITHM)
-    access_token = {"token": f"Bearer {encoded_jwt}"}
-    return access_token
+    return encoded_jwt
 
 
-async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
+async def get_current_user(
+        token: Annotated[str, Depends(oauth2_scheme)]) -> models.User:
     try:
         payload = jwt.decode(
             token, config.JWT_SECRET_KEY, algorithms=[config.JWT_ALGORITHM])
