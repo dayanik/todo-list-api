@@ -1,54 +1,74 @@
 # todo-list-api
-g# URL Shortening Service 🧩
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-restfull todo list api with authentication, authorization. [roadmap.sh](https://roadmap.sh/projects/todo-list-api)
+RESTFull todo list api with authentication, authorization. [roadmap.sh](https://roadmap.sh/projects/todo-list-api)
 ---
 ## 🎯 Возможности
 
-- CRUD постов
+- [x] регистрация пользователей
+- [x] аутентификация и выдача токена
+- [x] crud задач
+- [x] авторизация только аутентифицированных пользователей
+- [x] обработка ошибок и безопасность
+- [x] валидация данных
+- [x] пагинация и фильтрация данных
 
 ---
 ## 🛠 Установка и запуск
 
 1. Клонируй репозиторий и перейди в директорию проекта
+
 ```bash
-git clone https://github.com/dayanik/url-shortening-service.git
-cd url-shortening-service
+git clone https://github.com/dayanik/todo-list-api.git
+cd todo-list-api
 ```
+
 2. В этом проекте используется sqlite3 асинхронная версия
 
-3. Запусти Docker контейнеры через compose:
+3. Скопируй файл конфигурационных переменных и перезапиши их значения
+
+```bash
+cp example.env .env
+```
+
+4. Запусти проект с помощью Docker-compose:
+
 ```bash
 docker-compose up -d --build
 ````
+
 ---
 ## 🔄 Примеры API
 
-| Метод  | Путь               | Описание               |
-| ------ | ------------------ | ---------------------- |
-| POST   | `/posts`           | Создать статью.        |
-| GET    | `/posts/{post_id}` | Получение статьи по id |
-| PUT    | `/posts/{post_id}` | Изменить статью        |
-| GET    | `/posts`           | получить все статьи    |
-| DELETE | `/posts/{post_id}` | Удалить статью по id   |
+| Метод  | Путь               | Описание                                |
+| ------ | ------------------ | --------------------------------------- |
+| POST   | `/register`        | Зарегестрироваться/создать пользователя |
+| POST   | `/login`           | Залогиниться/получить токен             |
+| POST   | `/todos`           | Создать задачу                          |
+| GET    | `/todos/{task_id}` | Получение задачи по id                  |
+| PUT    | `/todos/{task_id}` | Изменить задачу                         |
+| GET    | `/todos`           | Получить список задач                   |
+| DELETE | `/todos/{task_id}` | Удалить задачу по id                    |
 
 **Пример ответа:**
 
 ```json
-[
-  {
-    "post_id": 1,
-    "title": "My new Blog Post",
-    "content": "This is the content of my new blog post.",
-    "category": "Technology",
-    "tags": [
-      "Tech",
-      "Programming"
-    ],
-    "created_at": "2026-01-30T21:05:36",
-    "updated_at": "2026-01-30T21:05:36"
-  }
-]
+{
+  "data": [
+    {
+      "id": 1,
+      "title": "Buy groceries",
+      "description": "Buy milk, eggs, bread"
+    },
+    {
+      "id": 2,
+      "title": "Pay bills",
+      "description": "Pay electricity and water bills"
+    }
+  ],
+  "page": 1,
+  "limit": 10,
+  "total": 2
+}
 ```
 
 ---
@@ -65,10 +85,10 @@ test
 ## 📈 Стек технологий
 
 * FastAPI
-* SQLite3
+* AIOSQLite3
 * ORM SqlAlchemy
 * Docker
-
+* PyJWT
 ---
 ## 📄 Лицензия
 
