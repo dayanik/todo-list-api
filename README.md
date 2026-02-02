@@ -84,11 +84,12 @@ test
 ---
 ## 📈 Стек технологий
 
-* FastAPI
+* FastAPI[standard]
 * AIOSQLite3
-* ORM SqlAlchemy
+* ORM SqlAlchemy[asyncio]
 * Docker
 * PyJWT
+* pwdlib[argon]
 ---
 ## 📄 Лицензия
 
