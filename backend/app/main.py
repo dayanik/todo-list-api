@@ -35,7 +35,7 @@ async def validation_exception_handler(
     )
 async def create_user(data: schemas.UserRegisterRequest):
     user = await database.create_user(data)
-    token_expires = timedelta(minutes=config.ACCESS_TOKEN_EXPIRE_MINUTES)
+    token_expires = timedelta(minutes=config.TOKEN_EXPIRE_MINUTES)
     access_token = utils.create_access_token(
         data={"sub": user.email},
         expires_delta=token_expires
@@ -55,7 +55,7 @@ async def login_user(data: schemas.UserLoginRequest):
             detail="Incorrect email or password",
             headers={"WWW_Authenticate": "Bearer"},
         )
-    token_expires = timedelta(minutes=config.ACCESS_TOKEN_EXPIRE_MINUTES)
+    token_expires = timedelta(minutes=config.TOKEN_EXPIRE_MINUTES)
     access_token = utils.create_access_token(
         data={"sub": user.email},
         expires_delta=token_expires
